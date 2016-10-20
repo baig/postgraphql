@@ -71,7 +71,7 @@ export default function createCollectionGqlType<TValue> (
         : [],
 
       // Add fields from relations where this collection is the tail.
-      createCollectionRelationTailGqlFieldEntries(buildToken, collection),
+      createCollectionRelationTailGqlFieldEntries<TValue, TValue>(buildToken, collection, { getCollectionValue: value => value }),
 
       // Add all of our one-to-many relations (aka head relations).
       inventory.getRelations()
@@ -79,7 +79,7 @@ export default function createCollectionGqlType<TValue> (
         // collection.
         .filter(relation => relation.headCollectionKey.collection === collection)
         // Transform the relation into a field entry.
-        .map(<THeadKey>(relation: Relation<THeadKey>): [string, GraphQLFieldConfig<ObjectType.Value, mixed>] | null => {
+        .map(<TTailValue, TKey>(relation: Relation<TTailValue, TValue, TKey>): [string, GraphQLFieldConfig<TValue, mixed>] | null => {
           const tailCollection = relation.tailCollection
           const tailPaginator = tailCollection.paginator
 
@@ -92,7 +92,7 @@ export default function createCollectionGqlType<TValue> (
           const { gqlType: gqlConditionType, fromGqlInput: conditionFromGqlInput } = getConditionGqlType(buildToken, tailCollection.type)
           return [
             formatName.field(`${tailCollection.name}-by-${relation.name}`),
-            createConnectionGqlField<ObjectType.Value, Condition, ObjectType.Value>(buildToken, tailPaginator, {
+            createConnectionGqlField<TValue, Condition, TTailValue>(buildToken, tailPaginator, {
               // The one input arg we have for this connection is the `condition` arg.
               inputArgEntries: [
                 ['condition', {
